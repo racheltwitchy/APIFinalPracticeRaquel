@@ -1,6 +1,6 @@
+import { AppointmentRepository } from './appointment.repository';
 import { CreateAppointmentDTO, UpdateAppointmentDTO } from './appointment.dto';
 import { Appointment } from './appointment.model';
-import { AppointmentRepository } from './appointment.repository';
 
 export class AppointmentService {
   private appointmentRepository = new AppointmentRepository();
