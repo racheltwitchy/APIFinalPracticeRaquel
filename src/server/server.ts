@@ -1,39 +1,22 @@
-import "reflect-metadata";
-import express, { Application } from "express";
-import cors from "cors";
-import morgan from "morgan";
-import { Container } from "typedi";
-import { Api } from "./api/api";
-import { DatabaseService } from "../database/database";
+import express, { Application } from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import dotenv from 'dotenv';
 
-// import { DatabaseService } from "../database/database.service";
-// import { Api } from "./api";
+dotenv.config();
 
 const app: Application = express();
+const PORT = process.env.PORT || 3000;
 
 // Middlewares
+app.use(bodyParser.json());
 app.use(cors());
-app.use(morgan("dev"));
-app.use(express.json());
 
-// Rutas principales
-const api = Container.get(Api);
-app.use("/api", api.getApiRouter());
+// Routes
+app.get('/', (req, res) => {
+    res.send('API is running...');
+});
 
-// Inicializar base de datos
-(async () => {
-  try {
-    const dbService = Container.get(DatabaseService);
-    await dbService.initializeDatabase();
-    console.log("Database initialized successfully.");
-  } catch (error) {
-    console.error("Error initializing the database:", error);
-    process.exit(1);
-  }
-})();
-
-// Configuración del puerto
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
