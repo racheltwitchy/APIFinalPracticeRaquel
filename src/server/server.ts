@@ -1,22 +1,48 @@
-import express, { Application } from 'express';
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import dotenv from 'dotenv';
+import express, { Request, Response } from 'express';
+import 'reflect-metadata'; // Necesario para `typedi` y decoradores
+import { Container } from 'typedi';
+import { DatabaseService } from '../database/database.service';
 
-dotenv.config();
-
-const app: Application = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
-app.use(bodyParser.json());
-app.use(cors());
+// Middleware para parsear JSON
+app.use(express.json());
 
-// Routes
-app.get('/', (req, res) => {
-    res.send('API is running...');
-});
+// Inicializar la base de datos y el servidor
+(async () => {
+  try {
+    // Obtener una instancia del servicio de base de datos
+    const databaseService = Container.get(DatabaseService);
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+    // Inicializar la base de datos
+    await databaseService.initializeDatabase();
+    console.log('Database initialized');
+
+    // Endpoint de prueba
+    app.get('/', async (req: Request, res: Response): Promise<void> => {
+      res.send('API is running');
+    });
+
+    // Otros endpoints (puedes agregarlos aquí)
+    // Ejemplo:
+    app.get('/users', async (req: Request, res: Response): Promise<void> => {
+      try {
+        const db = await databaseService.connect();
+        const users = await db.all('SELECT * FROM users');
+        res.json(users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).send('Internal Server Error');
+      }
+    });
+
+    // Arrancar servidor
+    app.listen(PORT, () =>
+      console.log(`Server is running on http://localhost:${PORT}`)
+    );
+  } catch (error) {
+    console.error('Failed to initialize the server:', error);
+    process.exit(1); // Salir si no se puede inicializar
+  }
+})();
