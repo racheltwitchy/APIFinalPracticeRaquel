@@ -94,14 +94,41 @@ export class DatabaseService {
       );
     `);
     
-
-    // Specialties Table
     await dbClient.exec(`
       CREATE TABLE IF NOT EXISTS specialties (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL
+        specialtyId INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT NOT NULL
       );
     `);
+    
+    await dbClient.exec(`
+      CREATE TABLE IF NOT EXISTS departments (
+        departmentId INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        location TEXT NOT NULL
+      );
+    `);
+    
+    await dbClient.exec(`
+      CREATE TABLE IF NOT EXISTS department_services (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        departmentId INTEGER NOT NULL,
+        service TEXT NOT NULL,
+        FOREIGN KEY(departmentId) REFERENCES departments(departmentId) ON DELETE CASCADE
+      );
+    `);
+    
+    await dbClient.exec(`
+      CREATE TABLE IF NOT EXISTS doctor_specialties (
+        doctorId INTEGER NOT NULL,
+        specialtyId INTEGER NOT NULL,
+        PRIMARY KEY (doctorId, specialtyId),
+        FOREIGN KEY (doctorId) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (specialtyId) REFERENCES specialties(specialtyId) ON DELETE CASCADE
+      );
+    `);
+    
 
     // Logs Table
     await dbClient.exec(`
