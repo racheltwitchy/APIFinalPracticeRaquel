@@ -17,4 +17,12 @@ export class DepartmentRepository {
     }
     return departments;
   }
+
+  async getDepartmentById(departmentId: number): Promise<Department | null> {
+    const result = await this.dbService.execQuery(
+      `SELECT * FROM departments WHERE departmentId = ?`,
+      [departmentId]
+    );
+    return result[0] || null;
+  }
 }

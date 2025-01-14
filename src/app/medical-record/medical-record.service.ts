@@ -13,18 +13,25 @@ export class MedicalRecordService {
   ) {}
 
   async createRecord(record: MedicalRecord): Promise<number> {
+    // Verificar que el paciente exista y tenga el rol correcto
+    const patient = await this.userRepository.getUserById(record.patientId);
+    if (!patient || patient.role !== "patient") {
+      throw new Error("Invalid patient ID or the user is not a patient");
+    }
+
+    // Verificar que el doctor exista y tenga el rol correcto
+    const doctor = await this.userRepository.getUserById(record.doctorId);
+    if (!doctor || doctor.role !== "doctor") {
+      throw new Error("Invalid doctor ID or the user is not a doctor");
+    }
+
     // Crear el registro médico
     const recordId = await this.medicalRecordRepository.createRecord(record);
-  
-    // Registrar en logs con detalles del registro
-    await this.auditService.logAction(
-      record.doctorId,
-      `Created a medical record for patient ID: ${record.patientId}`
-    );
-  
+
+    // Registrar en logs
+    await this.auditService.logAction(record.doctorId, "Created a medical record");
     return recordId;
   }
-  
 
   async updateRecord(recordId: number, updates: Partial<MedicalRecord>, doctorId: number): Promise<void> {
     // Verificar que el registro existe

@@ -62,9 +62,12 @@ export class DatabaseService {
         username TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
-        role TEXT NOT NULL
+        role TEXT NOT NULL,
+        departmentId INTEGER,
+        FOREIGN KEY(departmentId) REFERENCES departments(departmentId)
       );
     `);
+    
   
     // Appointments Table
     await dbClient.exec(`
