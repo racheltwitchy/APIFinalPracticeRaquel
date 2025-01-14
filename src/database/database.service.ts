@@ -141,6 +141,33 @@ export class DatabaseService {
       );
     `);
 
+    // Insertar datos por defecto en specialties
+  await dbClient.exec(`
+    INSERT OR IGNORE INTO specialties (name, description) VALUES
+      ('Cardiology', 'Heart-related issues'),
+      ('Neurology', 'Brain-related issues'),
+      ('Orthopedics', 'Bone and muscle disorders');
+  `);
+
+  // Insertar datos por defecto en departments
+  await dbClient.exec(`
+    INSERT OR IGNORE INTO departments (name, location) VALUES
+      ('Emergency', 'Building A, Floor 1'),
+      ('Surgery', 'Building B, Floor 2'),
+      ('Pediatrics', 'Building C, Floor 3');
+  `);
+
+  // Insertar datos por defecto en department_services
+  await dbClient.exec(`
+    INSERT OR IGNORE INTO department_services (departmentId, service) VALUES
+      (1, 'Trauma Care'),
+      (1, 'Critical Care'),
+      (2, 'General Surgery'),
+      (2, 'Plastic Surgery'),
+      (3, 'Child Vaccinations'),
+      (3, 'Growth Monitoring');
+  `);
+
     await this.closeDatabase();
   }
 }
