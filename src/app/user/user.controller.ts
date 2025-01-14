@@ -22,7 +22,7 @@ export class UserController {
       }
     });
 
-    this.router.put("/:userId", async (req, res) => {
+    this.router.put("/:userId",authenticateToken(["admin", "patient", "doctor"]), async (req, res) => {
       try {
         await this.userService.updateUser(+req.params.userId, req.body);
         res.status(200).json({ message: "User updated successfully" });
@@ -31,7 +31,7 @@ export class UserController {
       }
     });
 
-    this.router.delete("/:userId", async (req, res) => {
+    this.router.delete("/:userId",authenticateToken(["admin"]), async (req, res) => {
       try {
         await this.userService.deleteUser(+req.params.userId);
         res.status(200).json({ message: "User deleted successfully" });
