@@ -1,92 +1,106 @@
-import sqlite3 from 'sqlite3'; // Importa sqlite3 correctamente
-import { Database, open } from 'sqlite'; // Importa Database y open de sqlite
-import { Service } from 'typedi'; // Importa el decorador Service
-import path from "path"; // Importa path para construir rutas
+import sqlite3 from "sqlite3";
+import { Database, open } from "sqlite";
+import { Service } from "typedi";
+import { config } from "../config/environment";
+import path from "path";
 
-// Inicializa la base de datos
-@Service() // Este decorador es crucial para que `typedi` registre el servicio
+@Service()
 export class DatabaseService {
-  private db: Database | null = null;
+  private db: Database<sqlite3.Database, sqlite3.Statement> | null = null;
 
-  async connect(): Promise<Database> {
+  public async openDatabase(): Promise<
+    Database<sqlite3.Database, sqlite3.Statement>
+  > {
     if (this.db) return this.db;
 
+    console.log(
+      "Database path:",
+      path.join(__dirname, `../data/${config.dbOptions.database}`)
+    );
+
     this.db = await open({
-      filename: path.resolve(__dirname, "../data/database.db"), // Define la ruta de la base de datos
-      driver: sqlite3.Database, // Usa el constructor correcto de sqlite3
+      filename: path.join(__dirname, `../data/${config.dbOptions.database}`),
+      driver: sqlite3.Database,
     });
 
-    await this.db.exec("PRAGMA foreign_keys = ON"); // Activa las claves foráneas
+    await this.db.exec(`PRAGMA foreign_keys = ON;`);
     return this.db;
   }
 
-  async initializeDatabase(): Promise<void> {
-    const db = await this.connect();
+  public async closeDatabase(): Promise<void> {
+    if (this.db) {
+      await this.db.close();
+      this.db = null;
+    }
+  }
 
-    // Crear tablas
-    const tableCreationScripts = `
+  public async execQuery(sql: string, params: any[] = []): Promise<any> {
+    const dbClient = await this.openDatabase();
+    try {
+      const rows = await dbClient.all(sql, params);
+      return rows;
+    } finally {
+      await this.closeDatabase();
+    }
+  }
+
+  public async initializeDatabase(): Promise<void> {
+    const dbClient = await this.openDatabase();
+
+    // Users Table
+    await dbClient.exec(`
       CREATE TABLE IF NOT EXISTS users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          email TEXT UNIQUE NOT NULL,
-          password TEXT NOT NULL,
-          role TEXT NOT NULL CHECK(role IN ('patient', 'doctor', 'admin')),
-          specialty_id INTEGER,
-          department_id INTEGER,
-          FOREIGN KEY (specialty_id) REFERENCES specialties(id),
-          FOREIGN KEY (department_id) REFERENCES departments(id)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL
       );
+    `);
 
-      CREATE TABLE IF NOT EXISTS specialties (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS departments (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          description TEXT
-      );
-
+    // Appointments Table
+    await dbClient.exec(`
       CREATE TABLE IF NOT EXISTS appointments (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          patient_id INTEGER NOT NULL,
-          doctor_id INTEGER NOT NULL,
-          appointment_date DATETIME NOT NULL,
-          status TEXT NOT NULL CHECK(status IN ('scheduled', 'cancelled', 'completed')),
-          FOREIGN KEY (patient_id) REFERENCES users(id),
-          FOREIGN KEY (doctor_id) REFERENCES users(id)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patientId INTEGER NOT NULL,
+        doctorId INTEGER NOT NULL,
+        dateTime TEXT NOT NULL,
+        FOREIGN KEY(patientId) REFERENCES users(id),
+        FOREIGN KEY(doctorId) REFERENCES users(id)
       );
+    `);
 
+    // Medical Records Table
+    await dbClient.exec(`
       CREATE TABLE IF NOT EXISTS medical_records (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          patient_id INTEGER NOT NULL,
-          doctor_id INTEGER NOT NULL,
-          diagnosis TEXT NOT NULL,
-          treatment TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (patient_id) REFERENCES users(id),
-          FOREIGN KEY (doctor_id) REFERENCES users(id)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patientId INTEGER NOT NULL,
+        doctorId INTEGER NOT NULL,
+        record TEXT NOT NULL,
+        FOREIGN KEY(patientId) REFERENCES users(id),
+        FOREIGN KEY(doctorId) REFERENCES users(id)
       );
+    `);
 
+    // Specialties Table
+    await dbClient.exec(`
+      CREATE TABLE IF NOT EXISTS specialties (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      );
+    `);
+
+    // Logs Table
+    await dbClient.exec(`
       CREATE TABLE IF NOT EXISTS audit_logs (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER NOT NULL,
-          action TEXT NOT NULL,
-          timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (user_id) REFERENCES users(id)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId INTEGER,
+        action TEXT NOT NULL,
+        timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(userId) REFERENCES users(id)
       );
+    `);
 
-      CREATE TABLE IF NOT EXISTS notifications (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          recipient_id INTEGER NOT NULL,
-          type TEXT NOT NULL CHECK(type IN ('appointment', 'medical_record')),
-          message TEXT NOT NULL,
-          sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (recipient_id) REFERENCES users(id)
-      );
-    `;
-
-    await db.exec(tableCreationScripts); // Ejecuta los scripts para crear tablas
+    await this.closeDatabase();
   }
 }

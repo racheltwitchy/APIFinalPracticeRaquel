@@ -1,23 +1,66 @@
-import { CreateUserDTO, UpdateUserDTO } from './user.dto';
-import { User } from './user.model';
-import { UserRepository } from './user.repository';
+import { Service } from "typedi";
+import * as bcrypt from "bcrypt";
+import { UserRepository } from "./user.repository";
+import { User } from "./user.model";
+import * as jwt from "jsonwebtoken";
+import { config } from "../../config/environment";
 
+@Service()
 export class UserService {
-  private userRepository = new UserRepository();
+  constructor(private userRepository: UserRepository) {}
 
-  public async createUser(userData: CreateUserDTO): Promise<User> {
-    return this.userRepository.create(userData);
+  async createUser(user: User): Promise<number> {
+    // Verificar que el email sea único
+    const existingUser = await this.userRepository.getUserByEmail(user.email);
+    if (existingUser) {
+      throw new Error("Email already exists");
+    }
+  
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+  
+    // Crear el usuario
+    return this.userRepository.createUser({
+      ...user,
+      password: hashedPassword,
+    });
   }
 
-  public async getUserById(userId: string): Promise<User | null> {
-    return this.userRepository.findById(userId);
+  async authenticateUser(
+    email: string,
+    password: string
+  ): Promise<User | null> {
+    const user = await this.userRepository.getUserByUsername(email);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      return user;
+    }
+    return null;
   }
 
-  public async updateUser(userId: string, userData: UpdateUserDTO): Promise<User | null> {
-    return this.userRepository.update(userId, userData);
+  async authenticateAndGenerateToken(email: string, password: string): Promise<string | null> {
+    const user = await this.userRepository.getUserByEmail(email);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      // Generar token JWT
+      const token = jwt.sign(
+        { id: user.id, role: user.role },
+        config.jwtSecret,
+        { expiresIn: "1h" }
+      );
+      return token;
+    }
+    return null;
   }
 
-  public async deleteUser(userId: string): Promise<void> {
-    await this.userRepository.delete(userId);
+  async updateUser(userId: number, updates: Partial<User>): Promise<void> {
+    await this.userRepository.updateUser(userId, updates);
   }
+
+  async deleteUser(userId: number): Promise<void> {
+    await this.userRepository.deleteUser(userId);
+  }
+
+  async listAllUsers(): Promise<User[]> {
+    return this.userRepository.listAllUsers();
+  }
+  
 }

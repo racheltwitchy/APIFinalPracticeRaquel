@@ -4,19 +4,18 @@ import { UserController } from "../../app/user/user.controller";
 
 @Service()
 export class Api {
-  private apiRouter: Router;
+  private router: Router;
 
-  constructor(
-    private userController: UserController
-  ) {
-    this.apiRouter = Router();
-
-    // Public Routes
-    this.apiRouter.use("/users", userController.router);
-
+  constructor(private userController: UserController) {
+    this.router = Router();
+    this.mountRoutes();
   }
 
-  getApiRouter(): Router {
-    return this.apiRouter;
+  private mountRoutes() {
+    this.router.use("/users", this.userController.router);
+  }
+
+  getRouter(): Router {
+    return this.router;
   }
 }
