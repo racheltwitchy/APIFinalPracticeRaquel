@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Service } from "typedi";
 import { UserService } from "./user.service";
+import { authenticateToken } from "../../middleware/auth.middleware";
 
 @Service()
 export class UserController {
@@ -39,12 +40,26 @@ export class UserController {
       }
     });
 
-    this.router.get("/", async (req, res) => {
+    this.router.get("/", authenticateToken(["admin"]), async (req, res) => {
       try {
         const users = await this.userService.listAllUsers();
         res.status(200).json(users);
       } catch (error) {
         res.status(500).json({ error: "error.message" });
+      }
+    });
+    
+    this.router.post("/login", async (req, res) => {
+      const { email, password } = req.body;
+      try {
+        const token = await this.userService.authenticateAndGenerateToken(email, password);
+        if (token) {
+          res.status(200).json({ token });
+        } else {
+          res.status(401).json({ error: "Invalid credentials" });
+        }
+      } catch (error) {
+        res.status(500).json({ error: "Error during login" });
       }
     });
   }

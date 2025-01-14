@@ -6,13 +6,22 @@ import { User } from "./user.model";
 export class UserRepository {
   constructor(private dbService: DatabaseService) {}
 
+  async getUserByEmail(email: string): Promise<User | null> {
+    const result = await this.dbService.execQuery(
+      `SELECT * FROM users WHERE email = ?`,
+      [email]
+    );
+    return result[0] || null;
+  }
+  
   async createUser(user: User): Promise<number> {
     const result = await this.dbService.execQuery(
-      `INSERT INTO users (username, password, role) VALUES (?, ?, ?)`,
-      [user.username, user.password, user.role]
+      `INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)`,
+      [user.username, user.email, user.password, user.role]
     );
-    return (result as any).lastID; // SQLite devuelve `lastID` para el ID recién insertado
+    return (result as any).lastID; // ID generado
   }
+  
 
   async getUserById(userId: number): Promise<User | null> {
     const result = await this.dbService.execQuery(
@@ -49,4 +58,5 @@ export class UserRepository {
     const result = await this.dbService.execQuery(`SELECT * FROM users`);
     return result;
   }
+  
 }
