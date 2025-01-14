@@ -33,12 +33,20 @@ export class DatabaseService {
       this.db = null;
     }
   }
-
-  public async execQuery(sql: string, params: any[] = []): Promise<any>   {
+  public async execQuery(sql: string, params: any[] = []): Promise<any> {
     const dbClient = await this.openDatabase();
+    const { sql: query, params: queryParams } = { sql, params };
+  
     try {
-      const rows = await dbClient.all(sql, params);
-      return rows;
+      if (/^INSERT|UPDATE|DELETE/i.test(query)) {
+        // Ejecutar consultas de escritura y retornar `lastID`
+        const statement = await dbClient.run(query, queryParams);
+        return { lastID: statement.lastID, changes: statement.changes };
+      } else {
+        // Ejecutar consultas de lectura
+        const rows: any[] = await dbClient.all(query, queryParams);
+        return rows;
+      }
     } finally {
       await this.closeDatabase();
     }
@@ -77,8 +85,8 @@ export class DatabaseService {
         patientId INTEGER NOT NULL,
         doctorId INTEGER NOT NULL,
         record TEXT NOT NULL,
-        FOREIGN KEY(patientId) REFERENCES users(id),
-        FOREIGN KEY(doctorId) REFERENCES users(id)
+        FOREIGN KEY(patientId) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY(doctorId) REFERENCES users(id) ON DELETE CASCADE
       );
     `);
 
