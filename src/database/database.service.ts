@@ -84,11 +84,16 @@ export class DatabaseService {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         patientId INTEGER NOT NULL,
         doctorId INTEGER NOT NULL,
-        record TEXT NOT NULL,
-        FOREIGN KEY(patientId) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY(doctorId) REFERENCES users(id) ON DELETE CASCADE
+        diagnosis TEXT NOT NULL,
+        prescriptions TEXT,
+        testResults TEXT,
+        ongoingTreatments TEXT,
+        timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(patientId) REFERENCES users(id),
+        FOREIGN KEY(doctorId) REFERENCES users(id)
       );
     `);
+    
 
     // Specialties Table
     await dbClient.exec(`
