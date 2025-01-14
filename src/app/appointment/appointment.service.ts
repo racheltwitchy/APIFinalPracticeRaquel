@@ -29,13 +29,13 @@ export class AppointmentService {
     const appointmentId = await this.appointmentRepository.createAppointment(appointment);
 
     // Registrar en logs
-    await this.auditService.logAction(appointment.patientId, "Created an appointment");
+    await this.auditService.logAction(appointment.patientId, `Created an appointment with reason: ${appointment.reason}`);
 
     return appointmentId;
   }
 
   async rescheduleAppointment(appointmentId: number, dateTime: string): Promise<void> {
-    await this.appointmentRepository.updateAppointment(appointmentId, dateTime);
+    await this.appointmentRepository.updateAppointment(appointmentId, { dateTime });
 
     // Registrar en logs
     await this.auditService.logAction(appointmentId, "Rescheduled an appointment");
@@ -51,4 +51,22 @@ export class AppointmentService {
   async listAppointments(userId: number): Promise<Appointment[]> {
     return this.appointmentRepository.listAppointmentsByUser(userId);
   }
+
+  async getAppointmentsForUser(userId: number): Promise<Appointment[]> {
+    // Validar que el usuario existe y es paciente o doctor
+    const user = await this.userRepository.getUserById(userId);
+    if (!user || (user.role !== "patient" && user.role !== "doctor")) {
+      throw new Error("Invalid userId or user role");
+    }
+  
+    // Obtener las citas
+    const appointments = await this.appointmentRepository.getAppointmentsByUserId(userId);
+  
+    if (appointments.length === 0) {
+      throw new Error("No appointments found for this user");
+    }
+  
+    return appointments;
+  }
+  
 }

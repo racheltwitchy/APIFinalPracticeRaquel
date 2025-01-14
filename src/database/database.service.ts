@@ -73,6 +73,7 @@ export class DatabaseService {
         patientId INTEGER NOT NULL,
         doctorId INTEGER NOT NULL,
         dateTime TEXT NOT NULL,
+        reason TEXT NOT NULL,
         FOREIGN KEY(patientId) REFERENCES users(id),
         FOREIGN KEY(doctorId) REFERENCES users(id)
       );

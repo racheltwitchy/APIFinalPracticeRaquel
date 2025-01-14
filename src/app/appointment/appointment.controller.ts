@@ -58,15 +58,22 @@ export class AppointmentController {
     this.router.get(
       "/",
       authenticateToken(["patient", "doctor", "admin"]),
-      async (req, res) => {
+      async (req, res): Promise<void> => {
         try {
-          const userId = (req as any).user.id;
-          const appointments = await this.appointmentService.listAppointments(userId);
+          const userId = parseInt(req.query.userId as string, 10);
+    
+          if (isNaN(userId)) {
+            res.status(400).json({ error: "Invalid or missing userId parameter" });
+          }
+    
+          const appointments = await this.appointmentService.getAppointmentsForUser(userId);
           res.status(200).json(appointments);
         } catch (error) {
           res.status(400).json({ error: (error as Error).message });
         }
       }
     );
+    
+    
   }
 }
