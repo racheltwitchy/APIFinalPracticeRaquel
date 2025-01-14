@@ -85,8 +85,8 @@ export class DatabaseService {
         patientId INTEGER NOT NULL,
         doctorId INTEGER NOT NULL,
         record TEXT NOT NULL,
-        FOREIGN KEY(patientId) REFERENCES users(id),
-        FOREIGN KEY(doctorId) REFERENCES users(id)
+        FOREIGN KEY(patientId) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY(doctorId) REFERENCES users(id) ON DELETE CASCADE
       );
     `);
 
