@@ -34,7 +34,7 @@ export class DatabaseService {
     }
   }
 
-  public async execQuery(sql: string, params: any[] = []): Promise<any> {
+  public async execQuery(sql: string, params: any[] = []): Promise<any>   {
     const dbClient = await this.openDatabase();
     try {
       const rows = await dbClient.all(sql, params);

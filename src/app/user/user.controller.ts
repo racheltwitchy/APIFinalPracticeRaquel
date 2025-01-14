@@ -18,7 +18,7 @@ export class UserController {
         const userId = await this.userService.createUser(req.body);
         res.status(201).json({ userId });
       } catch (error) {
-        res.status(400).json({ error: "error.message" });
+        res.status(400).json({ error: (error as Error).message  });
       }
     });
 
@@ -27,7 +27,7 @@ export class UserController {
         await this.userService.updateUser(+req.params.userId, req.body);
         res.status(200).json({ message: "User updated successfully" });
       } catch (error) {
-        res.status(400).json({ error: "error.message" });
+        res.status(400).json({ error: (error as Error).message  });
       }
     });
 
@@ -36,7 +36,7 @@ export class UserController {
         await this.userService.deleteUser(+req.params.userId);
         res.status(200).json({ message: "User deleted successfully" });
       } catch (error) {
-        res.status(400).json({ error: "error.message" });
+        res.status(400).json({ error: (error as Error).message  });
       }
     });
 
@@ -45,7 +45,7 @@ export class UserController {
         const users = await this.userService.listAllUsers();
         res.status(200).json(users);
       } catch (error) {
-        res.status(500).json({ error: "error.message" });
+        res.status(500).json({ error: (error as Error).message  });
       }
     });
     
@@ -59,7 +59,7 @@ export class UserController {
           res.status(401).json({ error: "Invalid credentials" });
         }
       } catch (error) {
-        res.status(500).json({ error: "Error during login" });
+        res.status(500).json({ error: (error as Error).message });
       }
     });
   }
