@@ -2,19 +2,35 @@ import { Service } from "typedi";
 import { AppointmentRepository } from "./appointment.repository";
 import { Appointment } from "./appointment.model";
 import { AuditService } from "../audit-logs/audit.service";
+import { UserRepository } from "../user/user.repository";
 
 @Service()
 export class AppointmentService {
   constructor(
     private appointmentRepository: AppointmentRepository,
-    private auditService: AuditService
+    private auditService: AuditService,
+    private userRepository: UserRepository
   ) {}
 
   async createAppointment(appointment: Appointment): Promise<number> {
+    // Verificar que el paciente exista
+    const patient = await this.userRepository.getUserById(appointment.patientId);
+    if (!patient || patient.role !== "patient") {
+      throw new Error("Invalid patient ID");
+    }
+
+    // Verificar que el doctor exista
+    const doctor = await this.userRepository.getUserById(appointment.doctorId);
+    if (!doctor || doctor.role !== "doctor") {
+      throw new Error("Invalid doctor ID");
+    }
+
+    // Crear la cita
     const appointmentId = await this.appointmentRepository.createAppointment(appointment);
 
     // Registrar en logs
     await this.auditService.logAction(appointment.patientId, "Created an appointment");
+
     return appointmentId;
   }
 
