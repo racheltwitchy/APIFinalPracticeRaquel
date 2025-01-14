@@ -16,10 +16,23 @@ export class UserRepository {
   
   async createUser(user: User): Promise<number> {
     const result = await this.dbService.execQuery(
-      `INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)`,
-      [user.username, user.email, user.password, user.role]
+      `INSERT INTO users (username, email, password, role, departmentId) VALUES (?, ?, ?, ?, ?)`,
+      [user.username, user.email, user.password, user.role, user.departmentId || null]
     );
-    return (result as any).lastID; // ID generado
+
+    const userId = result.lastID;
+
+    // Insertar especialidades para doctores
+    if (user.role === "doctor" && user.specialtyIds) {
+      for (const specialtyId of user.specialtyIds) {
+        await this.dbService.execQuery(
+          `INSERT INTO doctor_specialties (doctorId, specialtyId) VALUES (?, ?)`,
+          [userId, specialtyId]
+        );
+      }
+    }
+
+    return userId;
   }
   
 
