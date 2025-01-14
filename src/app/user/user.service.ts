@@ -1,23 +1,40 @@
-import { CreateUserDTO, UpdateUserDTO } from './user.dto';
-import { User } from './user.model';
-import { UserRepository } from './user.repository';
+import { Service } from "typedi";
+import * as bcrypt from "bcrypt";
+import { UserRepository } from "./user.repository";
+import { User } from "./user.model";
 
+@Service()
 export class UserService {
-  private userRepository = new UserRepository();
+  constructor(private userRepository: UserRepository) {}
 
-  public async createUser(userData: CreateUserDTO): Promise<User> {
-    return this.userRepository.create(userData);
+  async createUser(user: User): Promise<number> {
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    return this.userRepository.createUser({
+      ...user,
+      password: hashedPassword,
+    });
   }
 
-  public async getUserById(userId: string): Promise<User | null> {
-    return this.userRepository.findById(userId);
+  async authenticateUser(
+    username: string,
+    password: string
+  ): Promise<User | null> {
+    const user = await this.userRepository.getUserByUsername(username);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      return user;
+    }
+    return null;
   }
 
-  public async updateUser(userId: string, userData: UpdateUserDTO): Promise<User | null> {
-    return this.userRepository.update(userId, userData);
+  async updateUser(userId: number, updates: Partial<User>): Promise<void> {
+    await this.userRepository.updateUser(userId, updates);
   }
 
-  public async deleteUser(userId: string): Promise<void> {
-    await this.userRepository.delete(userId);
+  async deleteUser(userId: number): Promise<void> {
+    await this.userRepository.deleteUser(userId);
+  }
+
+  async listAllUsers(): Promise<User[]> {
+    return this.userRepository.listAllUsers();
   }
 }

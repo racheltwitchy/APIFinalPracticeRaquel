@@ -1,64 +1,51 @@
-import { Request, Response, Router } from 'express';
-// import { UserService } from './user.service';
-
+import { Router } from "express";
+import { Service } from "typedi";
 import { UserService } from "./user.service";
 
+@Service()
 export class UserController {
-  public router : Router;
-  constructor(
-    private userService: UserService
-    ) { this.router=Router();
+  public router: Router;
+
+  constructor(private userService: UserService) {
+    this.router = Router();
+    this.routes();
   }
-  
-  public createUser = async (req: Request, res: Response) => {
-    try {
-      const user = await this.userService.createUser(req.body);
-      res.status(201).json(user);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(400).json({ message: error.message });
-      } else {
-        res.status(400).json({ message: "An unknown error occurred" });
-      }
-    }
-  };
 
-  public getUserById = async (req: Request, res: Response) => {
-    try {
-      const user = await this.userService.getUserById(req.params.id);
-      res.status(200).json(user);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(404).json({ message: error.message });
-      } else {
-        res.status(404).json({ message: "An unknown error occurred" });
+  private routes() {
+    this.router.post("/", async (req, res) => {
+      try {
+        const userId = await this.userService.createUser(req.body);
+        res.status(201).json({ userId });
+      } catch (error) {
+        res.status(400).json({ error: "error.message" });
       }
-    }
-  };
+    });
 
-  public updateUser = async (req: Request, res: Response) => {
-    try {
-      const updatedUser = await this.userService.updateUser(req.params.id, req.body);
-      res.status(200).json(updatedUser);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(400).json({ message: error.message });
-      } else {
-        res.status(400).json({ message: "An unknown error occurred" });
+    this.router.put("/:userId", async (req, res) => {
+      try {
+        await this.userService.updateUser(+req.params.userId, req.body);
+        res.status(200).json({ message: "User updated successfully" });
+      } catch (error) {
+        res.status(400).json({ error: "error.message" });
       }
-    }
-  };
+    });
 
-  public deleteUser = async (req: Request, res: Response) => {
-    try {
-      await this.userService.deleteUser(req.params.id);
-      res.status(200).json({ message: "User deleted successfully" });
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(404).json({ message: error.message });
-      } else {
-        res.status(404).json({ message: "An unknown error occurred" });
+    this.router.delete("/:userId", async (req, res) => {
+      try {
+        await this.userService.deleteUser(+req.params.userId);
+        res.status(200).json({ message: "User deleted successfully" });
+      } catch (error) {
+        res.status(400).json({ error: "error.message" });
       }
-    }
-  };
+    });
+
+    this.router.get("/", async (req, res) => {
+      try {
+        const users = await this.userService.listAllUsers();
+        res.status(200).json(users);
+      } catch (error) {
+        res.status(500).json({ error: "error.message" });
+      }
+    });
+  }
 }

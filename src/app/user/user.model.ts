@@ -1,8 +1,6 @@
 export interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: 'patient' | 'doctor' | 'admin';
-    specialties?: string[]; // Applicable only for doctors
-  }
-  
+  id?: number;
+  username: string;
+  password: string;
+  role: "patient" | "doctor" | "admin";
+}

@@ -1,48 +1,37 @@
-import express, { Request, Response } from 'express';
-import 'reflect-metadata'; // Necesario para `typedi` y decoradores
-import { Container } from 'typedi';
-import { DatabaseService } from '../database/database.service';
+import "reflect-metadata";
+import express, { Application } from "express";
+import cors from "cors";
+import morgan from "morgan";
+import { Container } from "typedi";
+import { DatabaseService } from "../database/database.service";
+import listEndpoints from "express-list-endpoints";
+import { Api } from "./api/api";
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const app: Application = express();
 
-// Middleware para parsear JSON
+// Middlewares
+app.use(cors());
+app.use(morgan("dev"));
 app.use(express.json());
 
-// Inicializar la base de datos y el servidor
+// Rutas principales
+const api = Container.get(Api);
+
 (async () => {
   try {
-    // Obtener una instancia del servicio de base de datos
-    const databaseService = Container.get(DatabaseService);
-
-    // Inicializar la base de datos
-    await databaseService.initializeDatabase();
-    console.log('Database initialized');
-
-    // Endpoint de prueba
-    app.get('/', async (req: Request, res: Response): Promise<void> => {
-      res.send('API is running');
-    });
-
-    // Otros endpoints (puedes agregarlos aquí)
-    // Ejemplo:
-    app.get('/users', async (req: Request, res: Response): Promise<void> => {
-      try {
-        const db = await databaseService.connect();
-        const users = await db.all('SELECT * FROM users');
-        res.json(users);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-        res.status(500).send('Internal Server Error');
-      }
-    });
-
-    // Arrancar servidor
-    app.listen(PORT, () =>
-      console.log(`Server is running on http://localhost:${PORT}`)
-    );
+    const dbService = Container.get(DatabaseService);
+    await dbService.initializeDatabase();
+    console.log("Database initialized successfully.");
   } catch (error) {
-    console.error('Failed to initialize the server:', error);
-    process.exit(1); // Salir si no se puede inicializar
+    console.error("Error initializing the database:", error);
+    process.exit(1);
   }
 })();
+
+// Configuración del puerto
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+console.log(listEndpoints(app)); //Permite ver todas las rutas de la aplicación
