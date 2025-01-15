@@ -51,27 +51,30 @@ export class AppointmentService {
   }
 
   async rescheduleAppointment(appointmentId: number, dateTime: string): Promise<void> {
-    await this.appointmentRepository.updateAppointment(appointmentId, { dateTime });
-
-    // Crear notificación
     const appointment = await this.appointmentRepository.getAppointmentById(appointmentId);
-    if (appointment) {
-      await this.notificationService.createNotification({
-        userId: appointment.patientId,
-        message: `Your appointment has been rescheduled to ${dateTime}.`,
-        type: "appointment"
-      });
-
-      await this.notificationService.createNotification({
-        userId: appointment.doctorId,
-        message: `Your appointment has been rescheduled to ${dateTime}.`,
-        type: "appointment"
-      });
+    if (!appointment) {
+      throw new Error("Appointment not found");
     }
-
+  
+    await this.appointmentRepository.updateAppointment(appointmentId, { dateTime });
+  
+    // Crear notificaciones para el paciente y el doctor
+    await this.notificationService.createNotification({
+      userId: appointment.patientId,
+      message: `Your appointment has been rescheduled to ${dateTime}.`,
+      type: "appointment"
+    });
+  
+    await this.notificationService.createNotification({
+      userId: appointment.doctorId,
+      message: `Your appointment has been rescheduled to ${dateTime}.`,
+      type: "appointment"
+    });
+  
     // Registrar en logs
     await this.auditService.logAction(appointmentId, "Rescheduled an appointment");
   }
+  
 
   async cancelAppointment(appointmentId: number): Promise<void> {
     const appointment = await this.appointmentRepository.getAppointmentById(appointmentId);
