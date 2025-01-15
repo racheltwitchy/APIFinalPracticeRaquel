@@ -15,17 +15,18 @@ export class NotificationController {
   private routes() {
     // Obtener notificaciones para un usuario
     this.router.get(
-      "/",
-      authenticateToken(["patient", "doctor", "admin"]),
-      async (req, res) => {
-        try {
-          const userId = (req as any).user.id;
-          const notifications = await this.notificationService.getNotificationsForUser(userId);
-          res.status(200).json(notifications);
-        } catch (error) {
-          res.status(400).json({ error: (error as Error).message });
+        "/",
+        authenticateToken(["patient", "doctor", "admin"]),
+        async (req, res) => {
+          try {
+            const user = (req as any).user; // Obtener usuario autenticado
+            const notifications = await this.notificationService.getNotifications(user.id, user.role); // Llama a getNotifications
+            res.status(200).json(notifications); // Retorna notificaciones
+          } catch (error) {
+            res.status(400).json({ error: (error as Error).message });
+          }
         }
-      }
-    );
+      );
+      
   }
 }

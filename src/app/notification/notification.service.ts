@@ -9,8 +9,14 @@ export class NotificationService {
   async createNotification(notification: Notification): Promise<number> {
     return this.notificationRepository.createNotification(notification);
   }
+  
+  async getNotifications(userId: number, role: string): Promise<Notification[]> {
+    if (role === "admin") {
+      // Devolver todas las notificaciones para administradores
+      return await this.notificationRepository.getAllNotifications();
+    }
 
-  async getNotificationsForUser(userId: number): Promise<Notification[]> {
-    return this.notificationRepository.getNotificationsByUser(userId);
+    // Devolver notificaciones solo para el usuario especificado
+    return await this.notificationRepository.getNotificationsByUser(userId);
   }
 }
