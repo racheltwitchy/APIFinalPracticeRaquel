@@ -1,15 +1,17 @@
 import { Service } from "typedi";
-import { MedicalRecordRepository } from "./medical-record.repository";
-import { MedicalRecord } from "./medical-record.model";
 import { AuditService } from "../audit-logs/audit.service";
+import { NotificationService } from "../notification/notification.service";
 import { UserRepository } from "../user/user.repository";
+import { MedicalRecord } from "./medical-record.model";
+import { MedicalRecordRepository } from "./medical-record.repository";
 
 @Service()
 export class MedicalRecordService {
   constructor(
     private medicalRecordRepository: MedicalRecordRepository,
     private auditService: AuditService,
-    private userRepository: UserRepository // Repositorio de usuarios
+    private userRepository: UserRepository,
+    private notificationService: NotificationService // Servicio de notificaciones
   ) {}
 
   async createRecord(record: MedicalRecord): Promise<number> {
@@ -27,6 +29,13 @@ export class MedicalRecordService {
 
     // Crear el registro médico
     const recordId = await this.medicalRecordRepository.createRecord(record);
+
+    // Crear notificación para el paciente
+    await this.notificationService.createNotification({
+      userId: record.patientId,
+      message: `Your medical record has been updated by doctor ID: ${record.doctorId}.`,
+      type: "medical_record"
+    });
 
     // Registrar en logs
     await this.auditService.logAction(record.doctorId, "Created a medical record");
@@ -48,26 +57,14 @@ export class MedicalRecordService {
     // Actualizar el registro médico
     await this.medicalRecordRepository.updateRecord(recordId, updates);
 
+    // Crear notificación para el paciente
+    await this.notificationService.createNotification({
+      userId: record.patientId,
+      message: `Your medical record has been updated by doctor ID: ${doctorId}.`,
+      type: "medical_record"
+    });
+
     // Registrar en logs
     await this.auditService.logAction(doctorId, `Updated medical record with ID: ${recordId}`);
-  }
-
-  async getMedicalRecords(userId: number, role: string): Promise<MedicalRecord[]> {
-    // Si el rol es "admin", devolver todos los registros
-    if (role === "admin") {
-      return await this.medicalRecordRepository.getAllMedicalRecords();
-    }
-
-    // Si el rol es "patient", devolver los registros del paciente
-    if (role === "patient") {
-      return await this.medicalRecordRepository.getRecordsByPatient(userId);
-    }
-
-    // Si el rol es "doctor", devolver los registros asociados al doctor
-    if (role === "doctor") {
-      return await this.medicalRecordRepository.getRecordsByDoctor(userId);
-    }
-
-    throw new Error("Unauthorized access");
   }
 }

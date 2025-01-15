@@ -41,5 +41,14 @@ export class AppointmentRepository {
       [userId, userId]
     );
   }
+
+  async getAppointmentById(appointmentId: number): Promise<Appointment | null> {
+    const result = await this.dbService.execQuery(
+      `SELECT * FROM appointments WHERE id = ?`,
+      [appointmentId]
+    );
+    return result[0] || null;
+  }
+  
   
 }
