@@ -39,24 +39,35 @@ export class MedicalRecordService {
     if (!record) {
       throw new Error("Medical record not found");
     }
-  
+
     // Verificar que el doctor que lo creó sea el que intenta actualizarlo
     if (record.doctorId !== doctorId) {
       throw new Error("Access forbidden: You can only modify your own medical records");
     }
-  
+
     // Actualizar el registro médico
     await this.medicalRecordRepository.updateRecord(recordId, updates);
-  
+
     // Registrar en logs
     await this.auditService.logAction(doctorId, `Updated medical record with ID: ${recordId}`);
   }
 
-  async getRecordsForPatient(patientId: number): Promise<MedicalRecord[]> {
-    return this.medicalRecordRepository.getRecordsByPatient(patientId);
-  }
+  async getMedicalRecords(userId: number, role: string): Promise<MedicalRecord[]> {
+    // Si el rol es "admin", devolver todos los registros
+    if (role === "admin") {
+      return await this.medicalRecordRepository.getAllMedicalRecords();
+    }
 
-  async getRecordsForDoctor(doctorId: number): Promise<MedicalRecord[]> {
-    return this.medicalRecordRepository.getRecordsByDoctor(doctorId);
+    // Si el rol es "patient", devolver los registros del paciente
+    if (role === "patient") {
+      return await this.medicalRecordRepository.getRecordsByPatient(userId);
+    }
+
+    // Si el rol es "doctor", devolver los registros asociados al doctor
+    if (role === "doctor") {
+      return await this.medicalRecordRepository.getRecordsByDoctor(userId);
+    }
+
+    throw new Error("Unauthorized access");
   }
 }

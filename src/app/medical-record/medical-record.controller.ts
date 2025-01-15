@@ -40,26 +40,18 @@ export class MedicalRecordController {
         }
       );
       
-
-    this.router.get(
-      "/",
-      authenticateToken(["patient", "doctor"]),
-      async (req, res) => {
-        try {
-          const user = (req as any).user;
-          let records;
-
-          if (user.role === "patient") {
-            records = await this.medicalRecordService.getRecordsForPatient(user.id);
-          } else if (user.role === "doctor") {
-            records = await this.medicalRecordService.getRecordsForDoctor(user.id);
+      this.router.get(
+        "/",
+        authenticateToken(["patient", "doctor", "admin"]),
+        async (req, res) => {
+          try {
+            const user = (req as any).user;
+            const records = await this.medicalRecordService.getMedicalRecords(user.id, user.role);
+            res.status(200).json(records);
+          } catch (error) {
+            res.status(400).json({ error: (error as Error).message });
           }
-
-          res.status(200).json(records);
-        } catch (error) {
-          res.status(400).json({ error: (error as Error).message });
         }
-      }
-    );
+      );
   }
 }

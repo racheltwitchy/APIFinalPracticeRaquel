@@ -46,4 +46,9 @@ export class MedicalRecordRepository {
     );
     return result[0] || null;
   }
+
+  async getAllMedicalRecords(): Promise<MedicalRecord[]> {
+    return await this.dbService.execQuery(`SELECT * FROM medical_records`);
+  }
+  
 }
