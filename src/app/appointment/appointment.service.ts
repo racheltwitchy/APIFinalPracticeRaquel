@@ -1,4 +1,9 @@
+import { Service } from "typedi";
+import { AuditService } from "../audit-logs/audit.service";
 import { NotificationService } from "../notification/notification.service";
+import { UserRepository } from "../user/user.repository";
+import { Appointment } from "./appointment.model";
+import { AppointmentRepository } from "./appointment.repository";
 
 @Service()
 export class AppointmentService {
