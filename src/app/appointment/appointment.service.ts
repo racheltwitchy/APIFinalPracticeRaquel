@@ -100,4 +100,21 @@ export class AppointmentService {
     // Registrar en logs
     await this.auditService.logAction(appointmentId, "Cancelled an appointment");
   }
+
+  async getAppointmentsForUser(userId: number): Promise<Appointment[]> {
+    // Verificar que el usuario existe y tiene el rol adecuado
+    const user = await this.userRepository.getUserById(userId);
+    if (!user || (user.role !== "patient" && user.role !== "doctor")) {
+      throw new Error("Invalid userId or user role");
+    }
+  
+    // Obtener las citas del usuario
+    const appointments = await this.appointmentRepository.getAppointmentsByUserId(userId);
+    if (appointments.length === 0) {
+      throw new Error("No appointments found for this user");
+    }
+  
+    return appointments;
+  }
+  
 }

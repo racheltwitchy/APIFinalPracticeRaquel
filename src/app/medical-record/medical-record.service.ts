@@ -67,4 +67,24 @@ export class MedicalRecordService {
     // Registrar en logs
     await this.auditService.logAction(doctorId, `Updated medical record with ID: ${recordId}`);
   }
+
+  async getMedicalRecords(userId: number, role: string): Promise<MedicalRecord[]> {
+    // Si el rol es "admin", devolver todos los registros
+    if (role === "admin") {
+      return await this.medicalRecordRepository.getAllMedicalRecords();
+    }
+  
+    // Si el rol es "patient", devolver los registros del paciente
+    if (role === "patient") {
+      return await this.medicalRecordRepository.getRecordsByPatient(userId);
+    }
+  
+    // Si el rol es "doctor", devolver los registros asociados al doctor
+    if (role === "doctor") {
+      return await this.medicalRecordRepository.getRecordsByDoctor(userId);
+    }
+  
+    throw new Error("Unauthorized access");
+  }
+  
 }
