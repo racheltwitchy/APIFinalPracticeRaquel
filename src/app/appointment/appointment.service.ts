@@ -1,15 +1,17 @@
 import { Service } from "typedi";
-import { AppointmentRepository } from "./appointment.repository";
-import { Appointment } from "./appointment.model";
 import { AuditService } from "../audit-logs/audit.service";
+import { NotificationService } from "../notification/notification.service";
 import { UserRepository } from "../user/user.repository";
+import { Appointment } from "./appointment.model";
+import { AppointmentRepository } from "./appointment.repository";
 
 @Service()
 export class AppointmentService {
   constructor(
     private appointmentRepository: AppointmentRepository,
     private auditService: AuditService,
-    private userRepository: UserRepository
+    private userRepository: UserRepository,
+    private notificationService: NotificationService // Servicio de notificaciones
   ) {}
 
   async createAppointment(appointment: Appointment): Promise<number> {
@@ -28,6 +30,20 @@ export class AppointmentService {
     // Crear la cita
     const appointmentId = await this.appointmentRepository.createAppointment(appointment);
 
+    // Crear notificación para el paciente
+    await this.notificationService.createNotification({
+      userId: appointment.patientId,
+      message: `Your appointment with doctor ID: ${appointment.doctorId} has been confirmed.`,
+      type: "appointment"
+    });
+
+    // Crear notificación para el doctor
+    await this.notificationService.createNotification({
+      userId: appointment.doctorId,
+      message: `You have a new appointment with patient ID: ${appointment.patientId}.`,
+      type: "appointment"
+    });
+
     // Registrar en logs
     await this.auditService.logAction(appointment.patientId, `Created an appointment with reason: ${appointment.reason}`);
 
@@ -35,33 +51,65 @@ export class AppointmentService {
   }
 
   async rescheduleAppointment(appointmentId: number, dateTime: string): Promise<void> {
+    const appointment = await this.appointmentRepository.getAppointmentById(appointmentId);
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+  
     await this.appointmentRepository.updateAppointment(appointmentId, { dateTime });
-
+  
+    // Crear notificaciones para el paciente y el doctor
+    await this.notificationService.createNotification({
+      userId: appointment.patientId,
+      message: `Your appointment has been rescheduled to ${dateTime}.`,
+      type: "appointment"
+    });
+  
+    await this.notificationService.createNotification({
+      userId: appointment.doctorId,
+      message: `Your appointment has been rescheduled to ${dateTime}.`,
+      type: "appointment"
+    });
+  
     // Registrar en logs
     await this.auditService.logAction(appointmentId, "Rescheduled an appointment");
   }
+  
 
   async cancelAppointment(appointmentId: number): Promise<void> {
+    const appointment = await this.appointmentRepository.getAppointmentById(appointmentId);
+
+    if (appointment) {
+      // Crear notificaciones
+      await this.notificationService.createNotification({
+        userId: appointment.patientId,
+        message: `Your appointment with doctor ID: ${appointment.doctorId} has been cancelled.`,
+        type: "appointment"
+      });
+
+      await this.notificationService.createNotification({
+        userId: appointment.doctorId,
+        message: `Your appointment with patient ID: ${appointment.patientId} has been cancelled.`,
+        type: "appointment"
+      });
+    }
+
+    // Eliminar la cita
     await this.appointmentRepository.deleteAppointment(appointmentId);
 
     // Registrar en logs
     await this.auditService.logAction(appointmentId, "Cancelled an appointment");
   }
 
-  async listAppointments(userId: number): Promise<Appointment[]> {
-    return this.appointmentRepository.listAppointmentsByUser(userId);
-  }
-
   async getAppointmentsForUser(userId: number): Promise<Appointment[]> {
-    // Validar que el usuario existe y es paciente o doctor
+    // Verificar que el usuario existe y tiene el rol adecuado
     const user = await this.userRepository.getUserById(userId);
     if (!user || (user.role !== "patient" && user.role !== "doctor")) {
       throw new Error("Invalid userId or user role");
     }
   
-    // Obtener las citas
+    // Obtener las citas del usuario
     const appointments = await this.appointmentRepository.getAppointmentsByUserId(userId);
-  
     if (appointments.length === 0) {
       throw new Error("No appointments found for this user");
     }

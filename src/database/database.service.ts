@@ -147,6 +147,17 @@ export class DatabaseService {
         FOREIGN KEY(userId) REFERENCES users(id)
       );
     `);
+
+    await dbClient.exec(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        type TEXT NOT NULL,
+        timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(userId) REFERENCES users(id)
+      );
+    `);    
   
     // Insertar datos por defecto en Users
     await dbClient.exec(`
