@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node dist/server/server.js",
     "dev": "nodemon src/server/server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "cross-env NODE_ENV=test jest"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +39,7 @@
     "@types/lodash": "^4.17.14",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.10.5",
+    "cross-env": "^7.0.3",
     "jest": "^29.7.0",
     "nodemon": "^3.1.9",
     "supertest": "^7.0.0",
