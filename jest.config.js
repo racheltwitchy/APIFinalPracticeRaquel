@@ -6,4 +6,7 @@ module.exports = {
       "^.+.tsx?$": ["ts-jest",{}],
     },
     testPathIgnorePatterns: ["/dist/", "src/config/test.ts"],
+    moduleNameMapper: {
+        '^app/(.*)$': '<rootDir>/src/app/$1',
+      },
   };
